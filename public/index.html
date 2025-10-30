@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Supply Chain Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .products-list {
+            grid-column: 1 / -1;
+        }
+        
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .product-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .product-info h3 {
+            color: #2a5298;
+            margin-bottom: 0.25rem;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2a5298;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.75rem;
+            top: 1rem;
+            width: 12px;
+            height: 12px;
+            background: #2a5298;
+            border-radius: 50%;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .qr-code {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .blockchain-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e8f5e8;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .status-valid {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Blockchain Supply Chain Tracker</h1>
+            <p>Transparent, immutable supply chain tracking</p>
+        </div>
+        
+        <div class="blockchain-status">
+            <div>
+                <strong>Blockchain Status:</strong>
+                <span id="blockchainStatus" class="status-valid">✅ Valid</span>
+            </div>
+            <div>
+                <strong>Total Blocks:</strong>
+                <span id="totalBlocks">-</span>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card products-list">
+                <h2>📦 Tracked Products</h2>
+                <div id="productsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for product history -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Product History</h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+    
+    <!-- Modal for QR code -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeQRModal()">&times;</span>
+            <h2>QR Code for Product Tracking</h2>
+            <div id="qrContent" class="qr-code"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load blockchain status
+        async function loadBlockchainStatus() {
+            try {
+                const response = await fetch('/api/blockchain/status');
+                const status = await response.json();
+                
+                document.getElementById('totalBlocks').textContent = status.totalBlocks;
+                document.getElementById('blockchainStatus').textContent = 
+                    status.isValid ? '✅ Valid' : '❌ Invalid';
+                document.getElementById('blockchainStatus').className = 
+                    status.isValid ? 'status-valid' : 'status-invalid';
+            } catch (error) {
+                console.error('Failed to load blockchain status:', error);
+            }
+        }
+        
+        // Load products
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                
+                const productsList = document.getElementById('productsList');
+                productsList.innerHTML = products.map(product => `
+                    <div class="product-item">
+                        <div class="product-info">
+                            <h3>${product.name}</h3>
+                            <p><strong>ID:</strong> ${product.id}</p>
+                            <p><strong>Manufacturer:</strong> ${product.manufacturer}</p>
+                            <p><strong>Category:</strong> ${product.category}</p>
+                        </div>
+                        <div class="product-actions">
+                            <button class="btn btn-primary" onclick="showHistory('${product.id}')">
+                                📋 History
+                            </button>
+                            <button class="btn btn-secondary" onclick="showQR('${product.id}')">
+                                📱 QR Code
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load products:', error);
+            }
+        }
+        
+        // Show product history
+        async function showHistory(productId) {
+            try {
+                const response = await fetch(`/api/product/${productId}/history`);
+                const data = await response.json();
+                
+                document.getElementById('modalTitle').textContent = `History for ${productId}`;
+                
+                const timeline = data.history.map(item => `
+                    <div class="timeline-item">
+                        <h4>${item.action}</h4>
+                        <p><strong>From:</strong> ${item.from} → <strong>To:</strong> ${item.to}</p>
+                        <p><strong>Date:</strong> ${new Date(item.timestamp).toLocaleString()}</p>
+                        ${item.metadata ? `<p><strong>Details:</strong> ${JSON.stringify(item.metadata, null, 2)}</p>` : ''}
+                        <small>Block #${item.blockIndex} | Hash: ${item.blockHash.substring(0, 16)}...</small>
+                    </div>
+                `).join('');
+                
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="timeline">
+                        ${timeline}
+                    </div>
+                    <p><strong>Total Steps:</strong> ${data.totalSteps}</p>
+                    <p><strong>Chain Valid:</strong> ${data.isValid ? '✅ Yes' : '❌ No'}</p>
+                `;
+                
+                document.getElementById('historyModal').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to load product history:', error);
+            }
+        }
+        
+        // Show QR code
+        async function showQR(productId) {
+            try {
+                const response = await fetch(`/api/product/${productId}/qr`);
+                const data = await response.json();
+                
+                document.getElementById('qrContent').innerHTML = `
+                    <img src="${data.qrCode}" alt="QR Code" style="max-width: 300px;">
+                    <p>Scan to track product: <strong>${productId}</strong></p>
+                    <p><a href="${data.trackingUrl}" target="_blank">${data.trackingUrl}</a></p>
+                `;
+                
+                document.getElementById('qrModal').style.display = 'block';
+            } catch (error) {
+                console.error('Failed to generate QR code:', error);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+        
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const historyModal = document.getElementById('historyModal');
+            const qrModal = document.getElementById('qrModal');
+            if (event.target === historyModal) {
+                historyModal.style.display = 'none';
+            }
+            if (event.target === qrModal) {
+                qrModal.style.display = 'none';
+            }
+        }
+        
+        // Initialize
+        loadBlockchainStatus();
+        loadProducts();
+        
+        // Refresh status every 30 seconds
+        setInterval(loadBlockchainStatus, 30000);
+    </script>
+</body>
+</html>

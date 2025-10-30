@@ -1,0 +1,23 @@
+{
+  "name": "blockchain-supply-tracker",
+  "version": "1.0.0",
+  "description": "Blockchain-based supply chain transparency tracker",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "build": "npm install",
+    "deploy": "git push heroku main"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "web3": "^4.0.0",
+    "crypto": "^1.0.1",
+    "qrcode": "^1.5.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
